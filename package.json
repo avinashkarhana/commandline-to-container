@@ -1,0 +1,146 @@
+{
+  "name": "commandline-to-container",
+  "displayName": "Command to Container",
+  "description": "A",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.83.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "commandline-to-container",
+          "title": "Commandline to Container",
+          "icon": "resources/commandline-to-container.svg"
+        }
+      ]
+    },
+    "views": {
+      "commandline-to-container": [
+        {
+          "id": "running-containers-view",
+          "name": "Running Containers",
+					"contextualTitle": "Commandline to Container",
+          "icon": "$(play)"
+        },
+        {
+          "id": "exited-containers-view",
+          "name": "Exited Containers",
+          "contextualTitle": "Commandline to Container",
+          "icon": "$(circle-slash)"
+        }
+      ]
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "running-containers-view.openTerminal",
+          "group": "inline",
+          "when": "view == running-containers-view"
+        },
+        {
+          "command": "running-containers-view.exitContainer",
+          "group": "inline",
+          "when": "view == running-containers-view"
+        },
+        {
+          "command": "exited-containers-view.startContainer",
+          "group": "inline",
+          "when": "view == exited-containers-view"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "running-containers-view.refreshEntry",
+          "group": "navigation",
+          "when": "view == running-containers-view"
+        },
+        {
+          "command": "exited-containers-view.refreshEntry",
+          "group": "navigation",
+          "when": "view == exited-containers-view"
+        }
+      ]  
+    },
+    "commands": [
+      {
+        "command": "commandline-to-container.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "running-containers-view.exitContainer",
+        "title": "Exit Container",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "running-containers-view.openTerminal",
+        "title": "Open Terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "exited-containers-view.startContainer",
+        "title": "Start Container and Terminal",
+        "icon": "$(play)"
+      },
+      {
+        "command": "running-containers-view.refreshEntry",
+        "title": "Refresh Running Containers List",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "exited-containers-view.refreshEntry",
+        "title": "Refresh Exited Containers List",
+        "icon": "$(refresh)"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "Commandline to Container",
+        "properties": {
+          "commandlineToContainer.containerEngine": {
+            "type": "string",
+            "default": "docker",
+            "description": "Specify the container engine command. Like docker or podman"
+          },
+          "commandlineToContainer.shellProgram": {
+            "type": "string",
+            "default": "/bin/sh",
+            "description": "Specify the shell program. Like /bin/sh or /bin/bash"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.83.0",
+    "@types/mocha": "^10.0.2",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.7.3",
+    "@typescript-eslint/parser": "^6.7.3",
+    "eslint": "^8.50.0",
+    "glob": "^10.3.3",
+    "mocha": "^10.2.0",
+    "typescript": "^5.2.2",
+    "ts-loader": "^9.4.4",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "@vscode/test-electron": "^2.3.4"
+  }
+}
