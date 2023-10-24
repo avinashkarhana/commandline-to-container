@@ -1,7 +1,7 @@
 {
   "name": "commandline-to-container",
   "displayName": "Commandline Shell to Container",
-  "description": "A VS Code Extension to get a command line shell into Containers",
+  "description": "A VS Code Extension to get a command line shell into Local Containers in VSCodes's integrated terminal.",
   "author": {
     "name": "Avinash Karhana",
     "email": "avinashkarhana1@gmail.com"

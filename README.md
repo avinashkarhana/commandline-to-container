@@ -1,6 +1,9 @@
 # Commandline Shell to Containers
 
-A VS Code Extension to get a command line shell into local Containers
+A VS Code Extension to get a command line shell into local Containers in VSCodes's integrated terminal.
+
+## Screenshots
+<img src="resources/CommandlineShellToContainers_ScreenShot.png">
 
 
 ### Wanna help me to work more on Open-Source Projects like this?
