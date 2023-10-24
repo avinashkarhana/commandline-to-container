@@ -62,7 +62,7 @@
         },
         {
           "id": "commandline-to-container-settings-view",
-          "name": "Settings",
+          "name": "Settings: Commandline Shell to Container",
           "icon": "$(settings-gear)"
         }
       ]

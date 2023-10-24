@@ -2,11 +2,11 @@ import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { Configuration } from './configuration';
 
-export class Container extends vscode.TreeItem  {
+export class Container extends vscode.TreeItem {
     label: string;
     containerId: string;
 
-    constructor(context : vscode.ExtensionContext, label: string, containerId: string, collapsibleState?: vscode.TreeItemCollapsibleState) {
+    constructor(context: vscode.ExtensionContext, label: string, containerId: string, collapsibleState?: vscode.TreeItemCollapsibleState) {
         super(label, collapsibleState);
         this.label = (label === 'Running Containers') ? label : `${label} (${containerId})`;
         this.containerId = containerId;
@@ -16,7 +16,7 @@ export class Container extends vscode.TreeItem  {
 
     waitForContainerToBeRunning(containerId: string, containerEngine: string): Thenable<string> {
         return new Promise((resolve, reject) => {
-            const inspectCommand = `${containerEngine} inspect --format='{{.State.Status}}' ${containerId}`;
+            const inspectCommand = `${containerEngine} inspect --format='{{.State.Running}}' ${containerId}`;
             const MAX_RETRIES = 30;
             let retries = 0;
             const interval = setInterval(() => {
@@ -28,7 +28,7 @@ export class Container extends vscode.TreeItem  {
                         vscode.window.showErrorMessage(`Error: ${stderr}`);
                         reject(new Error(stderr));
                     } else {
-                        if (stdout.trim() === 'running') {
+                        if (stdout.trim() === 'true') {
                             clearInterval(interval);
                             resolve(containerId);
                         } else {
@@ -46,28 +46,50 @@ export class Container extends vscode.TreeItem  {
     }
 
     startContainer(): Thenable<string> {
-        return new Promise((resolve, reject) => {
-            const configuration = new Configuration();
-            const command = `${configuration.getContainerEngine()} start ${this.containerId}`;
-            exec(command, (error, stdout, stderr) => {
-                if (error) {
-                    vscode.window.showErrorMessage(`Error: ${error.message}`);
-                    reject(error);
-                } else if (stderr) {
-                    vscode.window.showErrorMessage(`Error: ${stderr}`);
-                    reject(new Error(stderr));
-                } else {
-                    this.waitForContainerToBeRunning(this.containerId, configuration.getContainerEngine()).then((containerRunning) => {
-                        resolve(containerRunning);
-                    });
+        return vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Starting container ${this.containerId}`,
+            cancellable: true
+        }, (progress, token) => {
+            let cancelStartProcess = false;
+            let ranStartCommand = false;
+            token.onCancellationRequested(() => {
+                cancelStartProcess = true;
+                if (ranStartCommand) {
+                    vscode.window.showInformationMessage(`Can not cancel container ${this.containerId} start process at this point. Please wait for the process to finish.`);
+                    progress.report({ increment: 10 });
                 }
+            });
+            return new Promise((resolve, reject) => {
+                progress.report({ increment: 25 });
+                const configuration = new Configuration();
+                const command = `${configuration.getContainerEngine()} start ${this.containerId}`;
+                if (cancelStartProcess) {
+                    reject("User cancelled container start process.");
+                }
+                ranStartCommand = true;
+                progress.report({ increment: 50 });
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        vscode.window.showErrorMessage(`Error: ${error.message}`);
+                        reject(error);
+                    } else if (stderr) {
+                        vscode.window.showErrorMessage(`Error: ${stderr}`);
+                        reject(new Error(stderr));
+                    } else {
+                        this.waitForContainerToBeRunning(this.containerId, configuration.getContainerEngine()).then((containerRunning) => {
+                            progress.report({ increment: 100 });
+                            resolve(containerRunning);
+                        });
+                    }
+                });
             });
         });
     }
 
     waitForContainerToExit(containerId: string, containerEngine: string): Thenable<boolean> {
         return new Promise((resolve, reject) => {
-            const inspectCommand = `${containerEngine} inspect --format='{{.State.Status}}' ${containerId}`;
+            const inspectCommand = `${containerEngine} inspect --format='{{.State.Running}}' ${containerId}`;
             let containerExited = false;
             const MAX_RETRIES = 30;
             let retries = 0;
@@ -80,7 +102,7 @@ export class Container extends vscode.TreeItem  {
                         vscode.window.showErrorMessage(`Error: ${stderr}`);
                         reject(new Error(stderr));
                     } else {
-                        if (stdout.trim() === 'exited') {
+                        if (stdout.trim() === 'false') {
                             clearInterval(interval);
                             containerExited = true;
                             resolve(containerExited);
@@ -99,21 +121,51 @@ export class Container extends vscode.TreeItem  {
     }
 
     exitContainer(): Thenable<boolean> {
-        return new Promise((resolve, reject) => {
-            const configuration = new Configuration();
-            const command = `${configuration.getContainerEngine()} stop ${this.containerId}`;
-            exec(command, (error, stdout, stderr) => {
-                if (error) {
-                    vscode.window.showErrorMessage(`Error: ${error.message}`);
-                    reject(error);
-                } else if (stderr) {
-                    vscode.window.showErrorMessage(`Error: ${stderr}`);
-                    reject(new Error(stderr));
-                } else {
-                    this.waitForContainerToExit(this.containerId, configuration.getContainerEngine()).then((containerExited) => {
-                        resolve(containerExited);
-                    });
+        // Get Terminals and kill if any running for this container
+        vscode.window.terminals.forEach((terminal) => {
+            if (terminal.name === `Terminal at ${this.label}`) {
+                terminal.dispose();
+                vscode.window.showInformationMessage(`Killed terminal ${terminal.name}`);
+            }
+        });
+        return vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Stopping container ${this.containerId}`,
+            cancellable: true
+        }, (progress, token) => {
+            let cancelExitProcess = false;
+            let ranExitCommand = false;
+
+            token.onCancellationRequested(() => {
+                cancelExitProcess = true;
+                if (ranExitCommand) {
+                    vscode.window.showInformationMessage(`Can not cancel container ${this.containerId} exit process at this point. Please wait for the process to finish.`);
+                    progress.report({ increment: 10 });
                 }
+            });
+            return new Promise((resolve, reject) => {
+                progress.report({ increment: 25 });
+                const configuration = new Configuration();
+                const command = `${configuration.getContainerEngine()} stop ${this.containerId}`;
+                if (cancelExitProcess) {
+                    reject(false);
+                }
+                ranExitCommand = true;
+                progress.report({ increment: 50 });
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        vscode.window.showErrorMessage(`Error: ${error.message}`);
+                        reject(error);
+                    } else if (stderr) {
+                        vscode.window.showErrorMessage(`Error: ${stderr}`);
+                        reject(new Error(stderr));
+                    } else {
+                        this.waitForContainerToExit(this.containerId, configuration.getContainerEngine()).then((containerExited) => {
+                            progress.report({ increment: 100 });
+                            resolve(containerExited);
+                        });
+                    }
+                });
             });
         });
     }
