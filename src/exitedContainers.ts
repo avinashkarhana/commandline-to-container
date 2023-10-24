@@ -28,9 +28,8 @@ export class ExitedContainersProvider implements vscode.TreeDataProvider<Contain
     private getExistedContainers(): Thenable<Container[]> {
         return new Promise((resolve, reject) => {
             const configuration = new Configuration();
-            const command = `${configuration.getContainerEngine()} ps --format '{"containerId": "{{.ID}}", "label": "{{.Names}}"}' --filter 'status=exited'`;
-            exec(command, (error, stdout, stderr) => {
-                const containerObjects: Container[] = [];
+            const listAllContainersCommand = `${configuration.getContainerEngine()} ps --format '{"containerId": "{{.ID}}", "label": "{{.Names}}"}' --all`;
+            exec(listAllContainersCommand, (error, stdout, stderr) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Error: ${error.message}`);
                     reject(error);
@@ -38,19 +37,40 @@ export class ExitedContainersProvider implements vscode.TreeDataProvider<Contain
                     vscode.window.showErrorMessage(`Error: ${stderr}`);
                     reject(new Error(stderr));
                 } else {
-                    const lines = stdout.split('\n');
-                    for (const line of lines) {
-                        if (line.trim() === '') { continue; }
-                        try {
-                            const containerData = JSON.parse(line);
-                            const container = new Container(this.context, containerData.label, containerData.containerId, vscode.TreeItemCollapsibleState.None);
-                            containerObjects.push(container);
-                        } catch (e) {
-                            vscode.window.showErrorMessage(`Error parsing line as JSON: ${line}`);
+                    let allContainerCommandOutput = "[" + stdout.split('\n').join(', ') + "]";
+                    allContainerCommandOutput = allContainerCommandOutput.replace("}, ]", "}]");
+                    const allContainers = JSON.parse(allContainerCommandOutput);
+
+                    const listRunningContainersCommand = `${configuration.getContainerEngine()} ps --format '{"containerId": "{{.ID}}", "label": "{{.Names}}"}'`;
+                    exec(listRunningContainersCommand, (error, stdout, stderr) => {
+                        const containerObjects: Container[] = [];
+                        if (error) {
+                            vscode.window.showErrorMessage(`Error: ${error.message}`);
+                            reject(error);
+                        } else if (stderr) {
+                            vscode.window.showErrorMessage(`Error: ${stderr}`);
+                            reject(new Error(stderr));
+                        } else {
+                            let runningContainersCommandOutput = "[" + stdout.split('\n').join(', ') + "]";
+                            runningContainersCommandOutput = runningContainersCommandOutput.replace("}, ]", "}]");
+                            const runningContainers = JSON.parse(runningContainersCommandOutput);
+
+                            // Filter out running containers from all containers
+                            this.exitedContainers = allContainers.filter((allContainer: any) => {
+                                return !runningContainers.some((runningContainer: any) => {
+                                    return runningContainer.containerId === allContainer.containerId;
+                                });
+                            });
+
+                            for (const exitedContainer of this.exitedContainers) {
+                                if (!exitedContainer.containerId) { continue; }
+                                const container = new Container(this.context, exitedContainer.label, exitedContainer.containerId, vscode.TreeItemCollapsibleState.None);
+                                containerObjects.push(container);
+                            }
+                            this.exitedContainers = containerObjects;
+                            resolve(this.exitedContainers);
                         }
-                    }
-                    this.exitedContainers = containerObjects;
-                    resolve(this.exitedContainers);
+                    });
                 }
             });
         });
