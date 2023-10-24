@@ -1,7 +1,14 @@
 {
   "name": "commandline-to-container",
-  "displayName": "Command to Container",
-  "description": "A",
+  "displayName": "Commandline Shell to Container",
+  "description": "A VS Code Extension to get a command line shell into Containers",
+  "author": {
+    "name": "Avinash Karhana",
+    "email": "avinashkarhana1@gmail.com"
+  },
+  "publisher": "avinashkarhana",
+  "license": "MIT",
+  "icon": "resources/commandline-to-container-icon.png",
   "version": "0.0.1",
   "repository": {
     "type": "git",
@@ -18,20 +25,23 @@
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
+    "clean": "rm -rf out dist && rm -rf *.vsix",
+    "recompile": "npm run clean && npm run compile",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "publish": "vsce publish"
   },
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
           "id": "commandline-to-container",
-          "title": "Commandline to Container",
+          "title": "Commandline Shell to Container",
           "icon": "resources/commandline-to-container.svg"
         }
       ]
@@ -41,14 +51,19 @@
         {
           "id": "running-containers-view",
           "name": "Running Containers",
-          "contextualTitle": "Commandline to Container",
+          "contextualTitle": "Commandline Shell to Container",
           "icon": "$(play)"
         },
         {
           "id": "exited-containers-view",
           "name": "Exited Containers",
-          "contextualTitle": "Commandline to Container",
+          "contextualTitle": "Commandline Shell to Container",
           "icon": "$(circle-slash)"
+        },
+        {
+          "id": "commandline-to-container-settings-view",
+          "name": "Settings",
+          "icon": "$(settings-gear)"
         }
       ]
     },
@@ -68,6 +83,11 @@
           "command": "exited-containers-view.startContainer",
           "group": "inline",
           "when": "view == exited-containers-view"
+        },
+        {
+          "command": "commandline-to-container.showCommandlineToContainerSettings",
+          "group": "inline",
+          "when": "view == commandline-to-container-settings-view"
         }
       ],
       "view/title": [
@@ -80,14 +100,15 @@
           "command": "exited-containers-view.refreshEntry",
           "group": "navigation",
           "when": "view == exited-containers-view"
+        },
+        {
+          "command": "commandline-to-container.showCommandlineToContainerSettings",
+          "group": "navigation",
+          "when": "view == commandline-to-container-settings-view"
         }
       ]
     },
     "commands": [
-      {
-        "command": "commandline-to-container.helloWorld",
-        "title": "Hello World"
-      },
       {
         "command": "running-containers-view.exitContainer",
         "title": "Exit Container",
@@ -112,11 +133,16 @@
         "command": "exited-containers-view.refreshEntry",
         "title": "Refresh Exited Containers List",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "commandline-to-container.showCommandlineToContainerSettings",
+        "title": "Settings",
+        "icon": "$(settings-gear)"
       }
     ],
     "configuration": [
       {
-        "title": "Commandline to Container",
+        "title": "Commandline Shell to Container",
         "properties": {
           "commandlineToContainer.containerEngine": {
             "type": "string",

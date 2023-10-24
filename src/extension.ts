@@ -34,6 +34,10 @@ export function activate(context: vscode.ExtensionContext) {
 	const exitedContainersProvider = new ExitedContainersProvider(context);
 	const runningContainersProvider = new RunningContainersProvider(context);
 
+	vscode.commands.registerCommand('commandline-to-container.showCommandlineToContainerSettings', () => {
+		vscode.commands.executeCommand('workbench.action.openSettings', 'commandlineToContainer');
+	});
+
 	vscode.window.registerTreeDataProvider('running-containers-view', runningContainersProvider);
 	vscode.commands.registerCommand('running-containers-view.refreshEntry', () => {
 		runningContainersProvider.refresh();
@@ -84,6 +88,24 @@ export function activate(context: vscode.ExtensionContext) {
 			exitedContainersProvider.refresh();
 		}
 	}));
+
+	vscode.window.registerTreeDataProvider('commandline-to-container-settings-view', {
+		getChildren: () => {
+			return [
+				{
+					label: 'Open settings',
+					command: {
+						command: 'commandline-to-container.showCommandlineToContainerSettings',
+						title: 'Open settings'
+					}
+				}
+			];
+		},
+		getTreeItem: (element) => {
+			return element;
+		}
+	});
+
 }
 
 export function deactivate() { }
