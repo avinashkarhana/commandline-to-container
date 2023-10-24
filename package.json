@@ -9,7 +9,7 @@
   "publisher": "avinashkarhana",
   "license": "MIT",
   "icon": "resources/commandline-to-container-icon.png",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/avinashkarhana/commandline-to-container.git"
