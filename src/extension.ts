@@ -8,33 +8,29 @@ const MAX_RETRIES = 10;
 
 let retries = 0;
 
-export function getShellProgram(): string {
-	const configuration = vscode.workspace.getConfiguration('commandlineToContainer');
-	return configuration.get('shellProgram') || '/bin/sh';
-}
-
-export function startTerminal(node: Container): Thenable<boolean> {
+export function startTerminal(node: Container): Promise<string> {
+	if (node === undefined || node.containerId === "" || node.containerId === undefined || node.containerId === null) {
+		return new Promise((resolve, reject) => {
+			vscode.window.showErrorMessage(`Error opening terminal for container ${node.label} : Container ID not found`);
+			reject("Container ID not found");
+		});
+	}
 	return new Promise((resolve, reject) => {
 		const configuration = new Configuration();
 		const containerEngine = configuration.getContainerEngine();
-		const terminal = vscode.window.createTerminal(`Terminal at ${node.label}`, `${containerEngine}`, ["exec" , "-it" , `${node.containerId}`, `${getShellProgram()}`]);
+		const shellProgram = configuration.getShellProgram();
+		const terminal = vscode.window.createTerminal(`Terminal at ${node.label}`, `${containerEngine}`, ["exec" , "-it" , `${node.containerId}`, `${shellProgram}`]);
 		if (terminal) {
 			terminal.show();
-			resolve(true);
+			resolve(`${node.containerId}`);
 		}
-		resolve(false);
+		resolve("Can not open terminal");
 	});
 }
 
 export function activate(context: vscode.ExtensionContext) {
 
 	console.log('Congratulations, your extension "commandline-to-container" is now active!');
-
-	let disposable = vscode.commands.registerCommand('commandline-to-container.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World from Command to Container!');
-	});
-	context.subscriptions.push(disposable);
-
 	const exitedContainersProvider = new ExitedContainersProvider(context);
 	const runningContainersProvider = new RunningContainersProvider(context);
 

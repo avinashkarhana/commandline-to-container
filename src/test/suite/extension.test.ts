@@ -1,15 +1,25 @@
 import * as assert from 'assert';
-
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
 import * as vscode from 'vscode';
-// import * as myExtension from '../../extension';
+import { Container } from '../../containers';
+import { startTerminal } from '../../extension';
 
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
+	let testUri = vscode.Uri.parse('vscode:///test');
+	let testContext = { extensionUri: testUri } as unknown as vscode.ExtensionContext;
 
-	test('Sample test', () => {
-		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
+	test('startTerminal function rejects: With malformed node', () => {
+		let testNode = new Container(testContext, 'TestLabel', '');
+		// assert that startTerminal(testNode) rejects with `Container ID not found`
+		let result = startTerminal(testNode);
+		return assert.rejects(result);
+	});
+
+	test('startTerminal function resolves: With valid node', () => {
+		let testNode = new Container(testContext, 'TestLabel', 'node');
+		// assert that startTerminal(testNode) resolves with true
+		return startTerminal(testNode).then((result) => {
+			return assert.strictEqual(result, 'node');
+		});
 	});
 });

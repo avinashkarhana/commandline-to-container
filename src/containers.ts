@@ -14,10 +14,9 @@ export class Container extends vscode.TreeItem  {
         this.iconPath = vscode.Uri.joinPath(context.extensionUri, "resources", "container.svg");
     }
 
-    waitForContainerToBeRunning(containerId: string, containerEngine: string): Thenable<boolean> {
+    waitForContainerToBeRunning(containerId: string, containerEngine: string): Thenable<string> {
         return new Promise((resolve, reject) => {
             const inspectCommand = `${containerEngine} inspect --format='{{.State.Status}}' ${containerId}`;
-            let containerRunning = false;
             const MAX_RETRIES = 30;
             let retries = 0;
             const interval = setInterval(() => {
@@ -31,8 +30,7 @@ export class Container extends vscode.TreeItem  {
                     } else {
                         if (stdout.trim() === 'running') {
                             clearInterval(interval);
-                            containerRunning = true;
-                            resolve(containerRunning);
+                            resolve(containerId);
                         } else {
                             retries++;
                             if (retries > MAX_RETRIES) {
@@ -47,7 +45,7 @@ export class Container extends vscode.TreeItem  {
         });
     }
 
-    startContainer(): Thenable<boolean> {
+    startContainer(): Thenable<string> {
         return new Promise((resolve, reject) => {
             const configuration = new Configuration();
             const command = `${configuration.getContainerEngine()} start ${this.containerId}`;
